@@ -1,0 +1,106 @@
+apiVersion: ceph.rook.io/v1
+kind: CephCluster
+metadata:
+  name: ceph-cluster
+  namespace: {{ .Release.Namespace }}
+spec:
+  cephVersion:
+    image: "{{ .Values.cluster.image.repository }}:{{ .Values.cluster.image.tag }}"
+    allowUnsupported: false
+  dataDirHostPath: /var/lib/ceph
+  skipUpgradeChecks: false
+  continueUpgradeAfterChecksEvenIfNotHealthy: false
+  mon:
+    count: {{ .Values.cluster.mon.count }}
+    allowMultiplePerNode: {{ .Values.cluster.mon.allowMultiplePerNode }}
+  dashboard:
+    enabled: true
+    # urlPrefix: /ceph-dashboard
+    # port: 8443
+    ssl: true
+  monitoring:
+    enabled: false
+    rulesNamespace: {{ .Release.Namespace }}
+  network:
+    hostNetwork: {{ .Values.cluster.hostNetwork }}
+  rbdMirroring:
+    workers: 0
+  placement:
+    mon:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: ceph-mon-placement
+              operator: In
+              values:
+              - enabled
+    mgr:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: ceph-mgr-placement
+              operator: In
+              values:
+              - enabled
+  annotations:
+  resources:
+  removeOSDsIfOutAndSafeToRemove: false
+  storage: # cluster level storage configuration and selection
+    useAllNodes: false
+    useAllDevices: false
+    deviceFilter:
+    location:
+    {{ if .Values.cluster.storage.nodes }}
+    nodes:
+      {{- range $nodeConfig := .Values.cluster.storage.nodes }}
+      - name: {{ $nodeConfig.name }}
+        {{ if $nodeConfig.devices }}
+        devices:
+        {{- range $osdConfig := $nodeConfig.devices }}
+        - name: {{ $osdConfig.name }}
+          {{ if  $osdConfig.config }}
+          config:
+            storeType: {{ $osdConfig.config.storeType }}
+            {{ if eq "$osdConfig.config.storeType" "bluestore" }}
+            metadataDevice: {{ $osdConfig.config.metadataDevice }}
+            databaseSizeMB: {{ $osdConfig.config.databaseSizeMB }}
+            {{ else if eq "$osdConfig.config.storeType" "filestore" }}
+            journalSizeMB: {{ $osdConfig.config.journalSizeMB }}
+            {{ end }}
+          {{ end }}
+        {{- end }}
+        {{ end }}
+        {{ if $nodeConfig.config }}
+        config:
+          storeType: {{ $nodeConfig.config.storeType }}
+          {{ if eq "$nodeConfig.config.storeType" "bluestore" }}
+          metadataDevice: {{ $nodeConfig.config.metadataDevice }}
+          databaseSizeMB: {{ $nodeConfig.config.databaseSizeMB }}
+          {{ else if eq "$nodeConfig.config.storeType" "filestore" }}
+          journalSizeMB: {{ $nodeConfig.config.journalSizeMB }}
+          {{ end }}
+        {{ end }}
+        {{ if $nodeConfig.directories }}
+        directories:
+        {{- range $directoriesConfig := $nodeConfig.directories }}
+        - path: {{ $directoriesConfig }}
+        {{- end }}
+        {{ end }}
+      {{- end }}
+    {{ end }}
+    config:
+      storeType: {{ .Values.cluster.storage.storeType }}
+      {{ if eq ".Values.cluster.storage.storeType" "bluestore" }}
+      metadataDevice: {{ .Values.cluster.storage.metadataDevice }}
+      databaseSizeMB: {{ .Values.cluster.storage.databaseSizeMB }}
+      {{ else if eq ".Values.cluster.storage.storeType" "filestore" }}
+      journalSizeMB: {{ .Values.cluster.storage.journalSizeMB }}
+      {{ end }}
+      osdsPerDevice: "1" # this value can be overridden at the node or device level
+      # encryptedDevice: "true" # the default value for this option is "false"
+    {{ if .Values.cluster.storage.dataPath }}
+    directories:
+    - path: "{{ .Values.cluster.storage.dataPath }}"
+    {{ end }}

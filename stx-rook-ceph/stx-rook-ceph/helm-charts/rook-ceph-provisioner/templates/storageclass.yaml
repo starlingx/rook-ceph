@@ -1,0 +1,55 @@
+{{- if .Values.global.provision_storage }}
+{{ $namespace := .Release.Namespace }}
+{{ $defaults := .Values.provisionStorage.classdefaults}}
+{{ $provisioner := .Values.provisionStorage.provisioner_name }}
+{{ $defaultSC := .Values.provisionStorage.defaultStorageClass }}
+{{ $releaseGroup := .Values.release_group | default .Release.Name }}
+{{ $element := .Values.provisionStorage.classes }}
+apiVersion: ceph.rook.io/v1
+kind: CephBlockPool
+metadata:
+  name: {{ $element.pool.pool_name }}
+  namespace: {{ $namespace }}
+spec:
+  failureDomain: host
+  replicated:
+    size:  {{ $element.pool.replication }}
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ $element.name }}
+  {{- if eq $defaultSC $element.name}}
+  annotations:
+    "storageclass.kubernetes.io/is-default-class": "true"
+  {{- end }}
+  labels:
+    release_group: {{ $releaseGroup }}
+provisioner: {{ $provisioner }}
+parameters:
+    # clusterID is the namespace where the rook cluster is running
+    # If you change this namespace, also change the namespace below where the secret namespaces are defined
+    clusterID: kube-system
+
+    # Ceph pool into which the RBD image shall be created
+    pool: {{ $element.pool.pool_name }}
+
+    # RBD image format. Defaults to "2".
+    imageFormat: "2"
+
+    # RBD image features. Available for imageFormat: "2". CSI RBD currently supports only `layering` feature.
+    imageFeatures: layering
+
+    # The secrets contain Ceph admin credentials. These are generated automatically by the operator
+    # in the same namespace as the cluster.
+    csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+    csi.storage.k8s.io/provisioner-secret-namespace: kube-system
+    csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+    csi.storage.k8s.io/node-stage-secret-namespace: kube-system
+    # Specify the filesystem type of the volume. If not specified, csi-provisioner
+    # will set default as `ext4`.
+    csi.storage.k8s.io/fstype: ext4
+# uncomment the following to use rbd-nbd as mounter on supported nodes
+#mounter: rbd-nbd
+reclaimPolicy: Delete
+{{- end }}

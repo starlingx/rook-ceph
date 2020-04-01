@@ -1,0 +1,6 @@
+SRC_DIR="stx-rook-ceph"
+COPY_LIST="files/*"
+
+EXCLUDE_LIST_FROM_TAR=".stestr"
+
+TIS_PATCH_VER=PKG_GITREVCOUNT

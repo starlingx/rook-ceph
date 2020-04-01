@@ -1,0 +1,52 @@
+# Default values for ceph-cluster
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+cluster:
+  image:
+    repository: ceph/ceph
+    tag: v14.2.10
+    pullPolicy: IfNotPresent
+  # Tolerations for the ceph-cluster to allow it to run on nodes with particular taints
+  tolerations: []
+  mon:
+    count: 3
+    allowMultiplePerNode: false
+  hostNetwork: true
+  storage:
+    storeType: bluestore
+    databaseSizeMB: 1024
+  ## Annotations to be added to pod
+  annotations: {}
+  ## LogLevel can be set to: TRACE, DEBUG, INFO, NOTICE, WARNING, ERROR or CRITICAL
+  logLevel: INFO
+  # Writing to the hostPath is required for the Ceph mon and osd pods. Given the restricted permissions in OpenShift with SELinux,
+  # the pod must be running privileged in order to write to the hostPath volume, this must be set to true then.
+  hostpathRequiresPrivileged: false
+  # Disable automatic orchestration when new devices are discovered.
+  disableDeviceHotplug: false
+
+toolbox:
+  image:
+    prefix: rook
+    repository: rook/ceph
+    tag: v1.2.7
+    pullPolicy: IfNotPresent
+
+
+hook:
+  image: docker.io/starlingx/ceph-config-helper:v1.15.0
+  duplexPreparation:
+    enable: false
+    activeController: controller-0
+    floatIP: 192.188.204.2
+  cleanup:
+    enable: true
+    rbac:
+      clusterRole: rook-ceph-cleanup
+      clusterRoleBinding: rook-ceph-cleanup
+      role: rook-ceph-cleanup
+      roleBinding: rook-ceph-cleanup
+      serviceAccount: rook-ceph-cleanup
+    mon_hosts:
+    - controller-0
+

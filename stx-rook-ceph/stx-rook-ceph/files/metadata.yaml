@@ -1,0 +1,4 @@
+app_name: @APP_NAME@
+app_version: @APP_VERSION@
+helm_repo: @HELM_REPO@
+helm_toolkit_required: false

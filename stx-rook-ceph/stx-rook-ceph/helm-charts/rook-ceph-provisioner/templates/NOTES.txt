@@ -1,0 +1,2 @@
+The rook-ceph-provisioner has been installed.
+

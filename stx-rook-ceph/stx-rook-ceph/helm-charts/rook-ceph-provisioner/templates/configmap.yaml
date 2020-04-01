@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.configmap_key_init | quote }}
+  namespace: {{ .Release.Namespace }}
+data:
+  provision.sh: |-
+    #!/bin/bash
+
+    if [ "${MON_HOST}"x == ""x ]; then
+        MON_HOST=$(echo ${ROOK_MONS} | sed 's/[a-z]\+=//g')
+    fi
+    cat > /etc/ceph/ceph.conf << EOF
+    [global]
+    mon_host = $MON_HOST
+    EOF
+
+    admin_keyring=$(echo $ADMIN_KEYRING | cut -f4 -d' ')
+    cat >  /etc/ceph/ceph.client.admin.keyring << EOF
+    [client.admin]
+    key = $admin_keyring
+    EOF

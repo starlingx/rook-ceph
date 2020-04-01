@@ -1,0 +1,2 @@
+# hacking pulls in flake8
+bashate >= 0.2

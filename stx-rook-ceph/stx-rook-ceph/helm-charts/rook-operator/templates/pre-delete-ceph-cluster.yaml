@@ -1,0 +1,66 @@
+{{/*
+#
+# Copyright (c) 2020 Intel Corporation, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+*/}}
+
+{{- if .Values.cleanup.enable }}
+{{ $root := . }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-rook-cleanup
+  namespace: {{ $root.Release.Namespace }}
+data:
+  rook_clean_up.sh: |-
+    #!/bin/bash
+
+    kubectl delete cronjob -n ${NAMESPACE} stx-ceph-mon-audit
+    kubectl delete cephclusters.ceph.rook.io ${CLUSTER_NAME} -n ${NAMESPACE}
+
+    echo "delete ceph cluster"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rook-cleanup
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    heritage: {{$root.Release.Service | quote }}
+    release: {{$root.Release.Name | quote }}
+    chart: "{{$root.Chart.Name}}-{{$root.Chart.Version}}"
+  annotations:
+    "helm.sh/hook": "pre-delete"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+spec:
+  template:
+    metadata:
+      name: rook-pre-delete-cleanup
+      namespace: {{ $root.Release.Namespace }}
+      labels:
+        heritage: {{$root.Release.Service | quote }}
+        release: {{$root.Release.Name | quote }}
+        chart: "{{$root.Chart.Name}}-{{$root.Chart.Version}}"
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: rook-ceph-system
+      volumes:
+        - name: config-rook-cleanup
+          configMap:
+            name: config-rook-cleanup
+      containers:
+        - name: rook-cleanup
+          image: {{ .Values.saInit.images.tags.sa_init_provisioner }}
+          command: [ "/bin/bash", "/tmp/mount/rook_clean_up.sh" ]
+          env:
+            - name: NAMESPACE
+              value: {{ $root.Release.Namespace }}
+            - name: CLUSTER_NAME
+              value: {{ .Values.cleanup.cluster_cleanup }}
+          volumeMounts:
+            - name: config-rook-cleanup
+              mountPath: /tmp/mount
+{{- end }}
