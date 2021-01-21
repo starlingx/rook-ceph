@@ -93,6 +93,9 @@ spec:
           - name: platform
             hostPath:
               path: /opt/platform
+          - name: buildinfo
+            hostPath:
+             path: /etc/build.info
           containers:
           - name: ceph-mon-audit
             image: {{ .Values.images.tags.ceph_config_helper | quote }}
@@ -108,4 +111,7 @@ spec:
               readOnly: true
             - name: ceph-mon-audit-bin
               mountPath: /tmp/mount
+            - name: buildinfo
+              mountPath: /etc/build.info
+              readOnly: true
 {{- end }}

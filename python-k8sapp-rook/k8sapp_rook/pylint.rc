@@ -46,7 +46,9 @@ extension-pkg-whitelist=lxml.etree,greenlet
 # We are disabling (R)efactor
 # We are selectively disabling (W)arning
 # We are not disabling (F)atal, (E)rror
-disable=C, R
+# W0212: protected-access
+# W0613: unused-argument
+disable=C, R, W0613, W0212
 
 [REPORTS]
 # Set the output format. Available formats are text, parseable, colorized, msvs
