@@ -2,3 +2,15 @@ app_name: @APP_NAME@
 app_version: @APP_VERSION@
 helm_repo: @HELM_REPO@
 helm_toolkit_required: false
+behavior:
+  platform_managed_app: yes
+  desired_state: uploaded
+  evaluate_reapply:
+    triggers:
+      - type: runtime-apply-puppet
+      - type: host-availability-updated
+        filters:
+          - availability: services-enabled
+      - type: host-delete
+        filters:
+          - personality: controller
