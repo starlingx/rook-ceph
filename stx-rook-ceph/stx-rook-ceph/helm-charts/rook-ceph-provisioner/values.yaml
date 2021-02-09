@@ -12,6 +12,7 @@ global:
   configmap_key_init: ceph-key-init-bin
   #
   provision_storage: true
+  cephfs_storage: true
   job_ceph_mgr_provision: true
   job_ceph_mon_audit: false
   job_ceph_osd_audit: true
@@ -73,6 +74,12 @@ provisionStorage:
       replication: 1
       crush_rule_name: storage_tier_ruleset
       chunk_size: 8
+
+
+cephfsStorage:
+    provisioner_name: kube-system.cephfs.csi.ceph.com
+    fs_name: stxfs
+    pool_name: stxfs-data0
 
 
 host_provision:

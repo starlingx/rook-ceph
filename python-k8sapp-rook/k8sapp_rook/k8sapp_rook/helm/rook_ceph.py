@@ -43,6 +43,7 @@ class RookCephHelm(base.BaseHelm):
         overrides = {
             common.HELM_NS_STORAGE_PROVISIONER: {
                 'cluster': self._get_cluster_override(),
+                'mds': self._get_mds_override(),
                 'hook': self._get_hook_override(),
             }
         }
@@ -72,6 +73,18 @@ class RookCephHelm(base.BaseHelm):
             return 1
         else:
             return 3
+
+    def _get_mds_override(self):
+        if cutils.is_aio_simplex_system(self.dbapi):
+            replica = 1
+        else:
+            replica = 2
+
+        mds = {
+            'replica': replica,
+        }
+
+        return mds
 
     def _get_hook_override(self):
         hook = {

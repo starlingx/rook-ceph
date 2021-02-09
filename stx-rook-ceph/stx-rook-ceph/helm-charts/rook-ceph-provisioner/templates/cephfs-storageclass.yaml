@@ -1,0 +1,27 @@
+{{- if .Values.global.cephfs_storage }}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: rook-cephfs
+provisioner: {{ .Values.cephfsStorage.provisioner_name }}
+parameters:
+  clusterID: {{ .Release.Namespace }}
+
+  # CephFS filesystem name into which the volume shall be created
+  fsName: {{ .Values.cephfsStorage.fs_name }}
+  #
+  # Ceph pool into which the volume shall be created
+  # Required for provisionVolume: "true"
+  pool: {{ .Values.cephfsStorage.pool_name }}
+  #
+  # The secrets contain Ceph admin credentials. These are generated automatically by the operator
+  # in the same namespace as the cluster.
+  csi.storage.k8s.io/provisioner-secret-name: rook-csi-cephfs-provisioner
+  csi.storage.k8s.io/provisioner-secret-namespace: {{ .Release.Namespace }}
+  csi.storage.k8s.io/controller-expand-secret-name: rook-csi-cephfs-provisioner
+  csi.storage.k8s.io/controller-expand-secret-namespace: {{ .Release.Namespace }}
+  csi.storage.k8s.io/node-stage-secret-name: rook-csi-cephfs-node
+  csi.storage.k8s.io/node-stage-secret-namespace: {{ .Release.Namespace }}
+
+reclaimPolicy: Delete
+{{- end }}

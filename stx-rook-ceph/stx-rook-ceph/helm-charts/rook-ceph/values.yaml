@@ -25,6 +25,12 @@ cluster:
   # Disable automatic orchestration when new devices are discovered.
   disableDeviceHotplug: false
 
+
+mds:
+  name: stxfs
+  replica: 3
+
+
 toolbox:
   image:
     prefix: rook

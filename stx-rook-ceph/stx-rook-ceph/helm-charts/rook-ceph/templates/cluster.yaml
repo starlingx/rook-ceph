@@ -104,3 +104,20 @@ spec:
     directories:
     - path: "{{ .Values.cluster.storage.dataPath }}"
     {{ end }}
+---
+apiVersion: ceph.rook.io/v1
+kind: CephFilesystem
+metadata:
+  name: {{ .Values.mds.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  metadataPool:
+    replicated:
+      size: {{ .Values.mds.replica }}
+  dataPools:
+    - replicated:
+        size: {{ .Values.mds.replica }}
+  preserveFilesystemOnDelete: true
+  metadataServer:
+    activeCount: 1
+    activeStandby: true
