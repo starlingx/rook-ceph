@@ -82,7 +82,7 @@ class RookCephProvisionerHelm(base.BaseHelm):
                 "host_provision": {
                     "controller_hosts": self._get_controller_hosts(),
                 },
-                "ceph_mon_audit_jobs": self._get_ceph_mon_audit(),
+                "ceph_audit_jobs": self._get_ceph_audit(),
             }
         }
 
@@ -149,7 +149,7 @@ class RookCephProvisionerHelm(base.BaseHelm):
 
         return controller_hosts
 
-    def _get_ceph_mon_audit(self):
+    def _get_ceph_audit(self):
         audit = {}
 
         if utils.is_aio_duplex_system(self.dbapi):

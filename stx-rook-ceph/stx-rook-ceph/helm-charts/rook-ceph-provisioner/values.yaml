@@ -14,6 +14,7 @@ global:
   provision_storage: true
   job_ceph_mgr_provision: true
   job_ceph_mon_audit: false
+  job_ceph_osd_audit: true
   job_host_provision: true
   job_cleanup: true
   deployment_stx_ceph_manager: true
@@ -79,10 +80,11 @@ host_provision:
   - controller-0
 
 
-ceph_mon_audit_jobs:
+ceph_audit_jobs:
   floatIP: 192.168.204.2
   audit:
     cron: "*/3 * * * *"
+    deadline: 200
     history:
       success: 1
       failed: 1

@@ -29,9 +29,10 @@ data:
         active=$node
     fi
 
-    controller_node=$(kubectl get pods -n kube-system  --selector=app="rook-ceph-mon,ceph_daemon_id=a" -o wide | awk   '/controller/  {print $7}')
+    controller_node=$(kubectl get pods -n kube-system  --selector=app="rook-ceph-mon,ceph_daemon_id=a" -o wide | awk   '/Running.*controller/  {print $7}')
     if [ x"$active" = x"$controller_node" ]; then
         echo "mon-a pod is running on active controler"
+
         exit 0
     fi
 
@@ -62,9 +63,10 @@ kind: CronJob
 metadata:
   name: stx-ceph-mon-audit
 spec:
-  schedule: {{ .Values.ceph_mon_audit_jobs.audit.cron | quote }}
-  successfulJobsHistoryLimit: {{ .Values.ceph_mon_audit_jobs.audit.history.success }}
-  failedJobsHistoryLimit: {{ .Values.ceph_mon_audit_jobs.audit.history.failed }}
+  schedule: {{ .Values.ceph_audit_jobs.audit.cron | quote }}
+  startingDeadlineSeconds: {{ .Values.ceph_audit_jobs.audit.deadline }}
+  successfulJobsHistoryLimit: {{ .Values.ceph_audit_jobs.audit.history.success }}
+  failedJobsHistoryLimit: {{ .Values.ceph_audit_jobs.audit.history.failed }}
   concurrencyPolicy: Forbid
   jobTemplate:
     metadata:
@@ -104,7 +106,7 @@ spec:
             - name: NAMESPACE
               value: {{ .Release.Namespace }}
             - name: FLOAT_IP
-              value: {{ .Values.ceph_mon_audit_jobs.floatIP }}
+              value: {{ .Values.ceph_audit_jobs.floatIP }}
             volumeMounts:
             - name: platform
               mountPath: /opt/platform
