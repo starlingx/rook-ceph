@@ -1,0 +1,9 @@
+---
+debname: stx-rook-ceph
+debver: 1.0-1
+src_path: stx-rook-ceph
+src_files:
+  - files
+revision:
+  dist: $STX_DIST
+  PKG_GITREVCOUNT: true

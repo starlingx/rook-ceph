@@ -1,0 +1,19 @@
+Source: stx-rook-ceph
+Section: admin
+Priority: optional
+Maintainer: StarlingX Developers <starlingx-discuss@lists.starlingx.io>
+Build-Depends: debhelper-compat (= 13),
+ helm,
+ openstack-helm-infra,
+ chartmuseum,
+ python3-k8sapp-rook,
+ python3-k8sapp-rook-wheels,
+ procps
+Standards-Version: 4.1.2
+Homepage: https://www.starlingx.io
+
+Package: stx-rook-ceph
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: StarlingX K8S application: Rook Ceph
+ The StarlingX K8S application for Rook Ceph

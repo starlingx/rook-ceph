@@ -1,0 +1,74 @@
+#!/usr/bin/make -f
+export DH_VERBOSE = 1
+
+export ROOT = debian/tmp
+export APP_FOLDER = $(ROOT)/usr/local/share/applications/helm
+export INITRD_DIR = $(ROOT)/etc/rc.d/init.d
+
+export DEB_VERSION = $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
+export MAJOR = $(shell echo $(DEB_VERSION) | cut -f 1 -d '.')
+export MINOR_PATCH = $(shell echo $(DEB_VERSION) | cut -f 2 -d '.')
+
+export APP_NAME = rook-ceph-apps
+export APP_VERSION = $(MAJOR).$(MINOR_PATCH)
+export APP_TARBALL = $(APP_NAME)-$(APP_VERSION).tgz
+
+export HELM_REPO = stx-platform
+export STAGING = staging
+
+%:
+	dh $@
+
+override_dh_auto_build:
+
+#	Host a server for the helm charts.
+	chartmuseum --debug --port=8879 --context-path='/charts' --storage="local" --storage-local-rootdir="./helm-charts" &
+	sleep 2
+	helm repo add local http://localhost:8879/charts
+
+#	Make the charts. These produce a tgz file
+	cd helm-charts && \
+	make rook-operator && \
+	make rook-ceph && \
+	make rook-ceph-provisioner
+
+#	Terminate the helm chart server.
+	pkill chartmuseum
+
+#	Setup staging
+	mkdir -p $(STAGING)
+	cp files/metadata.yaml $(STAGING)
+	cp manifests/manifest.yaml $(STAGING)
+	mkdir -p $(STAGING)/charts
+	cp helm-charts/*.tgz $(STAGING)/charts
+	cd $(STAGING)
+
+#	Populate metadata
+	sed -i 's/@APP_NAME@/$(APP_NAME)/g' $(STAGING)/metadata.yaml
+	sed -i 's/@APP_VERSION@/$(APP_VERSION)/g' $(STAGING)/metadata.yaml
+	sed -i 's/@HELM_REPO@/$(HELM_REPO)/g' $(STAGING)/metadata.yaml
+
+#	Copy the plugins: installed in the buildroot
+	mkdir -p $(STAGING)/plugins
+	cp /plugins/$(APP_NAME)/*.whl $(STAGING)/plugins
+
+#	Package it up
+	find . -type f ! -name '*.md5' -print0 | xargs -0 md5sum > checksum.md5
+	tar -zcf $(APP_TARBALL) -C $(STAGING)/ .
+
+#	Cleanup staging
+	rm -fr $(STAGING)
+
+override_dh_auto_install:
+#	Install the app tar file
+	install -d -m 755 $(APP_FOLDER)
+	install -d -m 755 $(INITRD_DIR)
+	install -p -D -m 755 $(APP_TARBALL) $(APP_FOLDER)
+	install -m 750 files/rook-mon-exit.sh $(INITRD_DIR)/rook-mon-exit
+
+# Prevents dh_fixperms from changing the permissions defined in this file
+override_dh_fixperms:
+	dh_fixperms --exclude etc/rc.d/init.d/rook-mon-exit
+
+override_dh_usrlocal:
+	echo "do nothing"
