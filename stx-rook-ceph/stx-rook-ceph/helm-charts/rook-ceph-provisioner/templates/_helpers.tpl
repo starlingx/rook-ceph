@@ -5,12 +5,15 @@ import os
 import subprocess
 
 from cephclient import wrapper
+from kubernetes import __version__ as K8S_MODULE_VERSION
 from kubernetes import config
 from kubernetes import client
 from kubernetes.client import Configuration
 from kubernetes.client.rest import ApiException
 from six.moves import http_client as httplib
 from cephclient import wrapper
+
+K8S_MODULE_MAJOR_VERSION = int(K8S_MODULE_VERSION.split('.')[0])
 
 # Kubernetes Files
 KUBERNETES_ADMIN_CONF = '/etc/kubernetes/admin.conf'
@@ -35,9 +38,12 @@ class KubeOperator(object):
             raise exception.KubeNotConfigured()
 
         config.load_kube_config(KUBERNETES_ADMIN_CONF)
+        if K8S_MODULE_MAJOR_VERSION < 12:
+            c = Configuration()
+        else:
+            c = Configuration().get_default_copy()
 
         # Workaround: Turn off SSL/TLS verification
-        c = Configuration()
         c.verify_ssl = False
         Configuration.set_default(c)
 
