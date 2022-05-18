@@ -1,0 +1,38 @@
+#
+# Copyright (c) 2022 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+apiVersion: "helm.toolkit.fluxcd.io/v2beta1"
+kind: HelmRelease
+metadata:
+  name: rook-operator
+  labels:
+    chart_group: starlingx-rook-charts
+spec:
+  releaseName: rook-operator
+  chart:
+    spec:
+      chart: rook-operator
+      version: 0.1.0
+      sourceRef:
+        kind: HelmRepository
+        name: stx-platform
+  interval: 5m
+  timeout: 30m
+  test:
+    enable: false
+  install:
+    disableHooks: false
+  upgrade:
+    disableHooks: false
+  uninstall:
+    disableHooks: true
+  valuesFrom:
+    - kind: Secret
+      name: rook-operator-static-overrides
+      valuesKey: rook-operator-static-overrides.yaml
+    - kind: Secret
+      name: rook-operator-system-overrides
+      valuesKey: rook-operator-system-overrides.yaml

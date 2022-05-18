@@ -11,16 +11,19 @@ export MINOR_PATCH = $(shell echo $(DEB_VERSION) | cut -f 2 -d '.')
 
 export APP_NAME = rook-ceph-apps
 export APP_VERSION = $(MAJOR).$(MINOR_PATCH)
-export APP_TARBALL = $(APP_NAME)-$(APP_VERSION).tgz
+export APP_TARBALL_FLUXCD = $(APP_NAME)-fluxcd-$(APP_VERSION).tgz
 
 export HELM_REPO = stx-platform
-export STAGING = staging
+export STAGING_FLUXCD = staging-fluxcd
 
 %:
 	dh $@
 
 override_dh_auto_build:
 
+	############
+	#  COMMON  #
+	############
 #	Host a server for the helm charts.
 	chartmuseum --debug --port=8879 --context-path='/charts' --storage="local" --storage-local-rootdir="./helm-charts" &
 	sleep 2
@@ -35,35 +38,39 @@ override_dh_auto_build:
 #	Terminate the helm chart server.
 	pkill chartmuseum
 
+
+	############
+	#  FLUXCD  #
+	############
 #	Setup staging
-	mkdir -p $(STAGING)
-	cp files/metadata.yaml $(STAGING)
-	cp manifests/manifest.yaml $(STAGING)
-	mkdir -p $(STAGING)/charts
-	cp helm-charts/*.tgz $(STAGING)/charts
-	cd $(STAGING)
+	mkdir -p $(STAGING_FLUXCD)
+	cp files/metadata.yaml $(STAGING_FLUXCD)
+	cp -Rv fluxcd-manifests $(STAGING_FLUXCD)
+	mkdir -p $(STAGING_FLUXCD)/charts
+	cp helm-charts/*.tgz $(STAGING_FLUXCD)/charts
 
 #	Populate metadata
-	sed -i 's/@APP_NAME@/$(APP_NAME)/g' $(STAGING)/metadata.yaml
-	sed -i 's/@APP_VERSION@/$(APP_VERSION)/g' $(STAGING)/metadata.yaml
-	sed -i 's/@HELM_REPO@/$(HELM_REPO)/g' $(STAGING)/metadata.yaml
+	sed -i 's/@APP_NAME@/$(APP_NAME)/g' $(STAGING_FLUXCD)/metadata.yaml
+	sed -i 's/@APP_VERSION@/$(APP_VERSION)/g' $(STAGING_FLUXCD)/metadata.yaml
+	sed -i 's/@HELM_REPO@/$(HELM_REPO)/g' $(STAGING_FLUXCD)/metadata.yaml
 
 #	Copy the plugins: installed in the buildroot
-	mkdir -p $(STAGING)/plugins
-	cp /plugins/$(APP_NAME)/*.whl $(STAGING)/plugins
+	mkdir -p $(STAGING_FLUXCD)/plugins
+	cp /plugins/$(APP_NAME)/*.whl $(STAGING_FLUXCD)/plugins
 
 #	Package it up
+	cd $(STAGING_FLUXCD)
 	find . -type f ! -name '*.md5' -print0 | xargs -0 md5sum > checksum.md5
-	tar -zcf $(APP_TARBALL) -C $(STAGING)/ .
+	tar -zcf $(APP_TARBALL_FLUXCD) -C $(STAGING_FLUXCD)/ .
 
 #	Cleanup staging
-	rm -fr $(STAGING)
+	rm -fr $(STAGING_FLUXCD)
 
 override_dh_auto_install:
 #	Install the app tar file
 	install -d -m 755 $(APP_FOLDER)
 	install -d -m 755 $(INITRD_DIR)
-	install -p -D -m 755 $(APP_TARBALL) $(APP_FOLDER)
+	install -p -D -m 755 $(APP_TARBALL_FLUXCD) $(APP_FOLDER)
 	install -m 750 files/rook-mon-exit.sh $(INITRD_DIR)/rook-mon-exit
 
 # Prevents dh_fixperms from changing the permissions defined in this file
@@ -72,3 +79,4 @@ override_dh_fixperms:
 
 override_dh_usrlocal:
 	echo "do nothing"
+

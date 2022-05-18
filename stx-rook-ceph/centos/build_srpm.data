@@ -1,5 +1,5 @@
 SRC_DIR="stx-rook-ceph"
-COPY_LIST="files/*"
+COPY_LIST="files/* $PKG_BASE/$SRC_DIR/fluxcd-manifests/*"
 
 EXCLUDE_LIST_FROM_TAR=".stestr"
 

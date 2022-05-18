@@ -1,0 +1,92 @@
+#
+# Copyright (c) 2022 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+global:
+  configmap_key_init: ceph-key-init-bin
+  #
+  provision_storage: true
+  cephfs_storage: true
+  job_ceph_mgr_provision: true
+  job_ceph_mon_audit: false
+  job_ceph_osd_audit: true
+  job_host_provision: true
+  job_cleanup: true
+  deployment_stx_ceph_manager: true
+  # Defines whether to generate service account and role bindings.
+  rbac: true
+  # Node Selector
+  nodeSelector: { node-role.kubernetes.io/master: "" }
+
+#
+# RBAC options.
+# Defaults should be fine in most cases.
+rbac:
+  clusterRole: rook-ceph-provisioner
+  clusterRoleBinding: rook-ceph-provisioner
+  role: rook-ceph-provisioner
+  roleBinding: rook-ceph-provisioner
+  serviceAccount: rook-ceph-provisioner
+
+
+images:
+  tags:
+    ceph_config_helper: docker.io/openstackhelm/ceph-config-helper:ubuntu_bionic-20220802
+    stx_ceph_manager: docker.io/starlingx/stx-ceph-manager:master-centos-stable-latest
+    k8s_entrypoint: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
+
+
+provisionStorage:
+  # Defines the name of the provisioner associated with a set of storage classes
+  provisioner_name: kube-system.rbd.csi.ceph.com
+  # Enable this storage class as the system default storage class
+  defaultStorageClass: rook-ceph
+  # Configure storage classes.
+  # Defaults for storage classes. Update this if you have a single Ceph storage cluster.
+  # No need to add them to each class.
+  classdefaults:
+    # Define ip addresses of Ceph Monitors
+    monitors: 192.168.204.3:6789,192.168.204.4:6789,192.168.204.1:6789
+    # Ceph admin account
+    adminId: admin
+    # K8 secret name for the admin context
+    adminSecretName: ceph-secret
+  # Configure storage classes.
+  # This section should be tailored to your setup. It allows you to define multiple storage
+  # classes for the same cluster (e.g. if you have tiers of drives with different speeds).
+  # If you have multiple Ceph clusters take attributes from classdefaults and add them here.
+  classes:
+    name: rook-ceph # Name of storage class.
+    secret:
+      # K8 secret name with key for accessing the Ceph pool
+      userSecretName: ceph-secret-kube
+      # Ceph user name to access this pool
+      userId: kube
+    pool:
+      pool_name: kube
+      replication: 1
+      crush_rule_name: storage_tier_ruleset
+      chunk_size: 8
+
+
+cephfsStorage:
+  provisioner_name: kube-system.cephfs.csi.ceph.com
+  fs_name: stxfs
+  pool_name: stxfs-data0
+
+
+host_provision:
+  controller_hosts:
+  - controller-0
+
+
+ceph_audit_jobs:
+  floatIP: 192.168.204.2
+  audit:
+    cron: "*/3 * * * *"
+    deadline: 200
+    history:
+      success: 1
+      failed: 1

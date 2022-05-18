@@ -8,7 +8,7 @@
 # Build variables
 %global helm_folder /usr/lib/helm
 #%global toolkit_version 0.1.0
-%global rook_version 1.2.7
+%global rook_version 1.9.6
 
 Summary: StarlingX K8S application: Rook Ceph
 Name: stx-rook-ceph
@@ -33,6 +33,14 @@ BuildRequires: python-k8sapp-rook-wheels
 %description
 The StarlingX K8S application for Rook Ceph
 
+%package fluxcd
+Summary: StarlingX K8s application for Rook Ceph FluxCD
+Group: base
+License: Apache-2.0
+
+%description fluxcd
+StarlingX K8s application for Rook Ceph FluxCD
+
 %prep
 %setup
 
@@ -54,7 +62,8 @@ kill %1
 
 # Create a chart tarball compliant with sysinv kube-app.py
 %define app_staging %{_builddir}/staging
-%define app_tarball %{app_name}-%{version}-%{tis_patch_ver}.tgz
+%define app_tarball_armada %{app_name}-%{version}-%{tis_patch_ver}.tgz
+%define app_tarball_fluxcd %{app_name}-fluxcd-%{version}-%{tis_patch_ver}.tgz
 
 # Setup staging
 mkdir -p %{app_staging}
@@ -73,9 +82,21 @@ sed -i 's/@HELM_REPO@/%{helm_repo}/g' %{app_staging}/metadata.yaml
 mkdir -p %{app_staging}/plugins
 cp /plugins/%{app_name}/*.whl %{app_staging}/plugins
 
-# package it up
+# package Armada
 find . -type f ! -name '*.md5' -print0 | xargs -0 md5sum > checksum.md5
-tar -zcf %{_builddir}/%{app_tarball} -C %{app_staging}/ .
+tar -zcf %{_builddir}/%{app_tarball_armada} -C %{app_staging}/ .
+
+# package FluxCD
+rm -f %{app_staging}/manifest.yaml
+
+cd -
+cp -R fluxcd-manifests %{app_staging}/
+cd %{app_staging}
+
+find . -type f ! -name '*.md5' -print0 | xargs -0 md5sum > checksum.md5
+tar -zcf %{_builddir}/%{app_tarball_fluxcd} -C %{app_staging}/ .
+
+cd -
 
 # Cleanup staging
 rm -fr %{app_staging}
@@ -83,10 +104,16 @@ rm -fr %{app_staging}
 %install
 install -d -m 755 %{buildroot}/%{app_folder}
 install -d -m 755 %{buildroot}%{_initrddir}
-install -p -D -m 755 %{_builddir}/%{app_tarball} %{buildroot}/%{app_folder}
+install -p -D -m 755 %{_builddir}/%{app_tarball_armada} %{buildroot}/%{app_folder}
 install -m 750 %{SOURCE1} %{buildroot}%{_initrddir}/rook-mon-exit
+
+install -p -D -m 755 %{_builddir}/%{app_tarball_fluxcd} %{buildroot}/%{app_folder}
 
 %files
 %defattr(-,root,root,-)
-%{app_folder}/*
+%{app_folder}/%{app_tarball_armada}
 %{_initrddir}/rook-mon-exit
+
+%files fluxcd
+%defattr(-,root,root,-)
+%{app_folder}/%{app_tarball_fluxcd}

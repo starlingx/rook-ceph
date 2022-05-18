@@ -1,0 +1,91 @@
+#
+# Copyright (c) 2022 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+operator:
+  image:
+    prefix: rook
+    repository: rook/ceph
+    tag: v1.9.6
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  # Tolerations for the rook-ceph-operator to allow it to run on nodes with particular taints
+  tolerations: []
+  # Delay to use in node.kubernetes.io/unreachable toleration
+  unreachableNodeTolerationSeconds: 5
+  # Whether rook watches its current namespace for CRDs or the entire cluster, defaults to false
+  currentNamespaceOnly: false
+  # Interval at which to get the ceph status and update the cluster custom resource status
+  cephStatusCheckInterval: "60s"
+  mon:
+    healthCheckInterval: "45s"
+    monOutTimeout: "600s"
+  ## Annotations to be added to pod
+  annotations: {}
+  ## LogLevel can be set to: TRACE, DEBUG, INFO, NOTICE, WARNING, ERROR or CRITICAL
+  logLevel: INFO
+  ## If true, create & use RBAC resources
+  rbacEnable: true
+  ## If true, create & use PSP resources
+  pspEnable: false
+  ## Settings for whether to disable the drivers or other daemons if they are not needed
+  csi:
+    enableRbdDriver: true
+    enableCephfsDriver: true
+    enableGrpcMetrics: true
+    enableSnapshotter: true
+
+    # Enable Ceph Kernel clients on kernel < 4.17. If your kernel does not support quotas for CephFS
+    # you may want to disable this setting. However, this will cause an issue during upgrades
+    # with the FUSE client. See the upgrade guide: https://rook.io/docs/rook/v1.2/ceph-upgrade.html
+    forceCephFSKernelClient: true
+
+    kubeletDirPath: /var/lib/kubelet
+    cephcsi:
+      image: quay.io/cephcsi/cephcsi:v3.6.2
+    registrar:
+      image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.4.0
+    provisioner:
+      image: gcr.io/k8s-staging-sig-storage/csi-provisioner:v3.1.0
+    snapshotter:
+      image: k8s.gcr.io/sig-storage/csi-snapshotter:v4.2.0
+    attacher:
+      image: k8s.gcr.io/sig-storage/csi-attacher:v3.4.0
+    resizer:
+      image: k8s.gcr.io/sig-storage/csi-resizer:v1.4.0
+  enableFlexDriver: false
+  enableDiscoveryDaemon: true
+
+  # In some situations SELinux relabelling breaks (times out) on large filesystems, and doesn't work with cephfs ReadWriteMany volumes (last relabel wins).
+  # Disable it here if you have similar issues.
+  # For more details see https://github.com/rook/rook/issues/2417
+  enableSelinuxRelabeling: true
+  # Writing to the hostPath is required for the Ceph mon and osd pods. Given the restricted permissions in OpenShift with SELinux,
+  # the pod must be running privileged in order to write to the hostPath volume, this must be set to true then.
+  hostpathRequiresPrivileged: false
+  # Disable automatic orchestration when new devices are discovered.
+  disableDeviceHotplug: false
+  # Blacklist certain disks according to the regex provided.
+  discoverDaemonUdev:
+
+# imagePullSecrets option allow to pull docker images from private docker registry. Option will be passed to all service accounts.
+imagePullSecrets:
+- name: default-registry-key
+
+saInit:
+  name: sa-init
+  images:
+    tags:
+      sa_init_provisioner: docker.io/openstackhelm/ceph-config-helper:ubuntu_bionic-20220802
+
+cleanup:
+  enable: true
+  cluster_cleanup: ceph-cluster
