@@ -4,7 +4,6 @@
 import os
 import subprocess
 
-from cephclient import wrapper
 from kubernetes import __version__ as K8S_MODULE_VERSION
 from kubernetes import config
 from kubernetes import client

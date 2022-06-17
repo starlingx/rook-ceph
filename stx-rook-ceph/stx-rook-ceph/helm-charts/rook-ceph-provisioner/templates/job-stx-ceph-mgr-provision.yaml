@@ -1,6 +1,6 @@
 {{/*
 #
-# Copyright (c) 2018 Wind River Systems, Inc.
+# Copyright (c) 2018-2022 Wind River Systems, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -25,6 +25,27 @@ data:
       exit 1
     fi
 
+    # Exec_retry - wait for the cluster to create osd pools
+    retries=25  # 4 minutes
+    retry_count=1
+
+    cmd="ceph osd pool ls | wc -l"
+    while [ $retry_count -le $retries ]; do
+        ret_stdout=$(eval $cmd)
+        echo "ret_stdout = " $ret_stdout
+        [ $ret_stdout -gt 1 ] && break
+
+        echo "Retry #" $retry_count
+
+        sleep 10
+        let retry_count++
+    done
+
+    if [ $retry_count -gt $retries ]; then
+      echo "Error: Ceph cluster pools not correctly initialized."
+      exit 1
+    fi
+
     cat > /tmp/controller << EOF
     [req]
     req_extensions = v3_ca
@@ -40,6 +61,28 @@ data:
     DNS.1 = controller-0
     DNS.2 = controller-1
     EOF
+
+    # Exec_retry - wait for the cluster to create osd pools
+    retries=25  # 4 minutes
+    retry_count=1
+
+    cmd="ls -1 /tmp/controller.key | wc -l"
+    while [ $retry_count -le $retries ]; do
+        ret_stdout=$(eval $cmd)
+        echo "ret_stdout = " $ret_stdout
+        [ $ret_stdout -eq 1 ] && break
+
+        echo "Retry #" $retry_count
+
+        sleep 1
+        let retry_count++
+    done
+
+    if [ $retry_count -gt $retries ]; then
+      echo "Error: File /tmp/controller.key was not created."
+      # exit 1
+    fi
+
     openssl req -new -nodes -x509 -subj /O=IT/CN=controller -days 3650 -config /tmp/controller -out /tmp/controller.crt -keyout /tmp/controller.key -extensions v3_ca
 
     for i in "a" "controller-0" "controller-1"
@@ -85,25 +128,25 @@ spec:
         - name: ceph-config
           emptyDir: {}
       initContainers:
-      - name: init
-        image: {{ .Values.images.tags.ceph_config_helper | quote }}
-        command: [ "/bin/bash", "/tmp/mount/provision.sh" ]
-        env:
-          - name: ADMIN_KEYRING
-            valueFrom:
-              secretKeyRef:
-                name: rook-ceph-admin-keyring
-                key: keyring
-          - name: ROOK_MONS
-            valueFrom:
-              configMapKeyRef:
-                name: rook-ceph-mon-endpoints
-                key: data
-        volumeMounts:
-        - mountPath: /etc/ceph
-          name: ceph-config
-        - name: config-key-provision
-          mountPath: /tmp/mount
+        - name: init
+          image: {{ .Values.images.tags.ceph_config_helper | quote }}
+          command: [ "/bin/bash", "/tmp/mount/provision.sh" ]
+          env:
+            - name: ADMIN_KEYRING
+              valueFrom:
+                secretKeyRef:
+                  name: rook-ceph-admin-keyring
+                  key: keyring
+            - name: ROOK_MONS
+              valueFrom:
+                configMapKeyRef:
+                  name: rook-ceph-mon-endpoints
+                  key: data
+          volumeMounts:
+            - mountPath: /etc/ceph
+              name: ceph-config
+            - name: config-key-provision
+              mountPath: /tmp/mount
       containers:
         - name: provision
           image: {{ .Values.images.tags.ceph_config_helper | quote }}

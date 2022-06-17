@@ -1,13 +1,10 @@
 #
-# Copyright (c) 2018 Wind River Systems, Inc.
+# Copyright (c) 2018-2022 Wind River Systems, Inc.
 # Copyright (c) 2020 Intel Corporation, Inc
 #
 # SPDX-License-Identifier: Apache-2.0
 #
 
-#
-# Global options.
-# Defaults should be fine in most cases.
 global:
   configmap_key_init: ceph-key-init-bin
   #
@@ -24,7 +21,6 @@ global:
   # Node Selector
   nodeSelector: { node-role.kubernetes.io/control-plane: "" }
 
-
 #
 # RBAC options.
 # Defaults should be fine in most cases.
@@ -38,9 +34,9 @@ rbac:
 
 images:
   tags:
-   ceph_config_helper: docker.io/starlingx/ceph-config-helper:v1.15.0
-   stx_ceph_manager: docker.io/starlingx/stx-ceph-manager:master-centos-stable-latest
-   k8s_entrypoint: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
+    ceph_config_helper: docker.io/openstackhelm/ceph-config-helper:ubuntu_bionic-20220802
+    stx_ceph_manager: docker.io/starlingx/stx-ceph-manager:master-centos-stable-latest
+    k8s_entrypoint: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
 
 
 provisionStorage:
@@ -77,9 +73,9 @@ provisionStorage:
 
 
 cephfsStorage:
-    provisioner_name: kube-system.cephfs.csi.ceph.com
-    fs_name: stxfs
-    pool_name: stxfs-data0
+  provisioner_name: kube-system.cephfs.csi.ceph.com
+  fs_name: stxfs
+  pool_name: stxfs-data0
 
 
 host_provision:

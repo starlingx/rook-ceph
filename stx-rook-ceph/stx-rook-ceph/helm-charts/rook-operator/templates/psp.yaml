@@ -15,11 +15,15 @@ apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
   name: 00-rook-ceph-operator
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'runtime/default'
+    seccomp.security.alpha.kubernetes.io/defaultProfileName: 'runtime/default'
 spec:
   privileged: true
   allowedCapabilities:
     # required by CSI
     - SYS_ADMIN
+    - MKNOD
   # fsGroup - the flexVolume agent has fsGroup capabilities and could potentially be any group
   fsGroup:
     rule: RunAsAny
@@ -77,4 +81,7 @@ spec:
     # Ceph mgr Prometheus Metrics
     - min: 9283
       max: 9283
+    # port for CSIAddons
+    - min: 9070
+      max: 9070
 {{- end }}
