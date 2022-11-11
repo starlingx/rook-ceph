@@ -18,7 +18,7 @@ global:
   # Defines whether to generate service account and role bindings.
   rbac: true
   # Node Selector
-  nodeSelector: { node-role.kubernetes.io/master: "" }
+  nodeSelector: { node-role.kubernetes.io/control-plane: "" }
 
 #
 # RBAC options.
