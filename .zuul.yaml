@@ -1,18 +1,20 @@
 ---
 - project:
+    vars:
+      ensure_tox_version: '<4'
     check:
       jobs:
         - openstack-tox-linters
-        - k8sapp-rook-ceph-tox-py27
-        - k8sapp-rook-ceph-tox-py39
+        # - k8sapp-rook-ceph-tox-py27
+        # - k8sapp-rook-ceph-tox-py39
         - k8sapp-rook-ceph-tox-flake8
         - k8sapp-rook-ceph-tox-pylint
         - k8sapp-rook-ceph-tox-bandit
     gate:
       jobs:
         - openstack-tox-linters
-        - k8sapp-rook-ceph-tox-py27
-        - k8sapp-rook-ceph-tox-py39
+        # - k8sapp-rook-ceph-tox-py27
+        # - k8sapp-rook-ceph-tox-py39
         - k8sapp-rook-ceph-tox-flake8
         - k8sapp-rook-ceph-tox-pylint
         - k8sapp-rook-ceph-tox-bandit
@@ -61,6 +63,7 @@
     parent: tox
     description: |
       Run flake8 test for k8sapp_rook_ceph
+    nodeset: ubuntu-focal
     files:
       - python-k8sapp-rook/*
     vars:
@@ -72,6 +75,7 @@
     parent: tox
     description: |
       Run pylint test for k8sapp_rook_ceph
+    nodeset: ubuntu-focal
     required-projects:
       - starlingx/config
       - starlingx/fault
@@ -88,6 +92,7 @@
     parent: tox
     description: |
       Run bandit test for k8sapp_rook_ceph
+    nodeset: ubuntu-focal
     files:
       - python-k8sapp-rook/*
     vars:
