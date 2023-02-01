@@ -34,10 +34,10 @@
       - starlingx/update
       - starlingx/utilities
     files:
-      - python-k8sapp-rook/*
+      - python3-k8sapp-rook/*
     vars:
       tox_envlist: py27
-      tox_extra_args: -c python-k8sapp-rook/k8sapp_rook/tox.ini
+      tox_extra_args: -c python3-k8sapp-rook/k8sapp_rook/tox.ini
 
 - job:
     name: k8sapp-rook-ceph-tox-py39
@@ -51,11 +51,11 @@
       - starlingx/update
       - starlingx/utilities
     files:
-      - python-k8sapp-rook/*
+      - python3-k8sapp-rook/*
     vars:
       python_version: 3.9
       tox_envlist: py39
-      tox_extra_args: -c python-k8sapp-rook/k8sapp_rook/tox.ini
+      tox_extra_args: -c python3-k8sapp-rook/k8sapp_rook/tox.ini
 
 
 - job:
@@ -65,10 +65,10 @@
       Run flake8 test for k8sapp_rook_ceph
     nodeset: ubuntu-focal
     files:
-      - python-k8sapp-rook/*
+      - python3-k8sapp-rook/*
     vars:
       tox_envlist: flake8
-      tox_extra_args: -c python-k8sapp-rook/k8sapp_rook/tox.ini
+      tox_extra_args: -c python3-k8sapp-rook/k8sapp_rook/tox.ini
 
 - job:
     name: k8sapp-rook-ceph-tox-pylint
@@ -82,10 +82,10 @@
       - starlingx/update
       - starlingx/utilities
     files:
-      - python-k8sapp-rook/*
+      - python3-k8sapp-rook/*
     vars:
       tox_envlist: pylint
-      tox_extra_args: -c python-k8sapp-rook/k8sapp_rook/tox.ini
+      tox_extra_args: -c python3-k8sapp-rook/k8sapp_rook/tox.ini
 
 - job:
     name: k8sapp-rook-ceph-tox-bandit
@@ -94,10 +94,10 @@
       Run bandit test for k8sapp_rook_ceph
     nodeset: ubuntu-focal
     files:
-      - python-k8sapp-rook/*
+      - python3-k8sapp-rook/*
     vars:
       tox_envlist: bandit
-      tox_extra_args: -c python-k8sapp-rook/k8sapp_rook/tox.ini
+      tox_extra_args: -c python3-k8sapp-rook/k8sapp_rook/tox.ini
 
 - job:
     name: stx-rook-ceph-apps-upload-git-mirror

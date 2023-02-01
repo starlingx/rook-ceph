@@ -1,11 +1,11 @@
-StarlingX Rook-Ceph-Armada-App Style Commandments
+StarlingX Rook-Ceph-App Style Commandments
 ================================================
 
 - Step 1: Read the OpenStack style commandments
   https://docs.openstack.org/hacking/latest/
 - Step 2: Read on
 
-Rook-Ceph-Armada-App Specific Commandments
+Rook-Ceph-App Specific Commandments
 -----------------------------------------
 
 None so far

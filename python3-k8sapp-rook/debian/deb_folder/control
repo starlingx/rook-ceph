@@ -16,13 +16,11 @@ Section: libs
 Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}
 Description: StarlingX Sysinv Rook Ceph Extensions
- This package contains sysinv plugins for the Rook Ceph armada
- K8S app.
+ Sysinv plugins for the Rook Ceph K8S app.
 
 Package: python3-k8sapp-rook-wheels
 Section: libs
 Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, python3-wheel
 Description: StarlingX Sysinv Rook Ceph Extension Wheels
- This package contains python wheels for the Rook Ceph platform armada
- K8S app plugins.
+ Python wheels for the Rook Ceph K8S app plugins.

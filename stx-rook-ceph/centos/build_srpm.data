@@ -1,8 +1,0 @@
-SRC_DIR="stx-rook-ceph"
-COPY_LIST="files/* $PKG_BASE/$SRC_DIR/fluxcd-manifests/*"
-
-EXCLUDE_LIST_FROM_TAR=".stestr"
-
-OPT_DEP_LIST="$STX_BASE/rook-ceph/python-k8sapp-rook"
-TIS_BASE_SRCREV=10c623509a68acad945d4e0c06a86b3e8486ad5b
-TIS_PATCH_VER=GITREVCOUNT

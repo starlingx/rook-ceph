@@ -1,9 +1,7 @@
 ---
-debname: stx-rook-ceph
+debname: python3-k8sapp-rook
 debver: 1.0-1
-src_path: stx-rook-ceph
-src_files:
-  - files
+src_path: k8sapp_rook
 revision:
   dist: $STX_DIST
   GITREVCOUNT:
