@@ -1,6 +1,7 @@
 {{/*
 #
 # Copyright (c) 2020 Intel Corporation, Inc.
+# Copyright (c) 2018-2022 Wind River Systems, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -40,7 +41,7 @@ data:
       echo "Error: no pool for storge class"
       exit 1
     fi
-    ceph osd pool set ${POOL_NAME} size ${POOL_REPLICATION}
+    ceph osd pool set ${POOL_NAME} size ${POOL_REPLICATION} --yes-i-really-mean-it
     ceph osd pool set ${POOL_NAME} pg_num ${POOL_CHUNK_SIZE}
 
     # Make sure crush rule exists.
@@ -107,7 +108,7 @@ metadata:
     "helm.sh/hook": "post-install, pre-upgrade, pre-rollback"
     "helm.sh/hook-delete-policy": "before-hook-creation"
 spec:
-  backoffLimit: 5  # Limit the number of job restart in case of failure: ~5 minutes.
+  backoffLimit: 10  # Limit the number of job restart in case of failure: ~10 minutes.
   template:
     metadata:
       name: "rook-ceph-provision"

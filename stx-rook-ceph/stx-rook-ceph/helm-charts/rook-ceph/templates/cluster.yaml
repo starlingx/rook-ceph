@@ -23,8 +23,6 @@ spec:
     rulesNamespace: {{ .Release.Namespace }}
   network:
     hostNetwork: {{ .Values.cluster.hostNetwork }}
-  rbdMirroring:
-    workers: 0
   placement:
     mon:
       nodeAffinity:

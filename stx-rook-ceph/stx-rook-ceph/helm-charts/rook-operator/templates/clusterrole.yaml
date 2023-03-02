@@ -1,6 +1,6 @@
 {{- if .Values.operator.rbacEnable }}
 # The cluster role for managing all the cluster-specific resources in a namespace
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: rook-ceph-cluster-mgmt
@@ -13,7 +13,7 @@ aggregationRule:
       rbac.rook.ceph.io/aggregate-to-rook-ceph-cluster-mgmt: "true"
 rules: []
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: rook-ceph-cluster-mgmt-rules
@@ -52,7 +52,7 @@ rules:
   - delete
 ---
 # The cluster role for managing the Rook CRDs
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: rook-ceph-global
@@ -65,7 +65,7 @@ aggregationRule:
       rbac.ceph.rook.io/aggregate-to-rook-ceph-global: "true"
 rules: []
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: rook-ceph-global-rules
@@ -82,6 +82,7 @@ rules:
   # Node access is needed for determining nodes where mons should run
   - nodes
   - nodes/proxy
+  - services
   verbs:
   - get
   - list
@@ -172,11 +173,11 @@ rules:
   resources:
   - csidrivers
   verbs:
-  - create
+  - "*"
 ---
 # Aspects of ceph-mgr that require cluster-wide access
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: rook-ceph-mgr-cluster
   labels:
@@ -189,7 +190,7 @@ aggregationRule:
 rules: []
 ---
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: rook-ceph-mgr-cluster-rules
   labels:
@@ -220,7 +221,7 @@ rules:
 ---
 # Aspects of ceph-mgr that require access to the system namespace
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: rook-ceph-mgr-system
 aggregationRule:
@@ -230,7 +231,7 @@ aggregationRule:
 rules: []
 ---
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: rook-ceph-mgr-system-rules
   labels:
@@ -246,7 +247,7 @@ rules:
   - watch
 ---
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: rook-ceph-object-bucket
   labels:
@@ -277,7 +278,7 @@ rules:
   - "*"
 ---
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: rook-ceph-osd
 rules:
@@ -288,9 +289,9 @@ rules:
   verbs:
   - get
   - list
-{{- if ((.Values.operator.agent) and .Values.operator.agent.mountSecurityMode) and ne .Values.operator.agent.mountSecurityMode "Any" }}
+{{- if .Values.operator.agent }}{{ if ne .Values.operator.agent.mountSecurityMode "Any" }}
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: rook-ceph-agent-mount
@@ -303,7 +304,7 @@ aggregationRule:
       rbac.ceph.rook.io/aggregate-to-rook-ceph-agent-mount: "true"
 rules: []
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: rook-ceph-agent-mount-rules
@@ -318,7 +319,7 @@ rules:
   - secrets
   verbs:
   - get
-{{- end }}
+{{- end }}{{ end }}
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -490,7 +491,7 @@ rules:
 {{- end }}
 {{- if .Values.operator.pspEnable }}
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: rook-ceph-system-psp-user
@@ -504,7 +505,7 @@ aggregationRule:
       rbac.ceph.rook.io/aggregate-to-rook-ceph-system-psp-user: "true"
 rules: []
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: 'psp:rook'

@@ -40,9 +40,15 @@ spec:
 {{- end }}
     spec:
       volumes:
-        - name: config-sa-volume-init
-          configMap:
-            name: config-sa-init
+      - name: config-sa-volume-init
+        configMap:
+          name: config-sa-init
+      - name: rook-config
+        emptyDir: {}
+      - name: default-config-dir
+        emptyDir: {}
+      - name: webhook-cert
+        emptyDir: {}
       initContainers:
       - name: rook-sa-init
         image: "{{ .Values.saInit.images.tags.sa_init_provisioner }}"
@@ -61,6 +67,17 @@ spec:
         image: "{{ .Values.operator.image.repository }}:{{ .Values.operator.image.tag }}"
         imagePullPolicy: {{ .Values.operator.image.pullPolicy }}
         args: ["ceph", "operator"]
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 2016
+          runAsGroup: 2016
+        volumeMounts:
+        - mountPath: /var/lib/rook
+          name: rook-config
+        - mountPath: /etc/ceph
+          name: default-config-dir
+        - mountPath: /etc/webhook
+          name: webhook-cert
         env:
         - name: ROOK_CURRENT_NAMESPACE_ONLY
           value: {{ .Values.operator.currentNamespaceOnly | quote }}
