@@ -58,7 +58,7 @@ data:
 
     kubectl delete  po -n kube-system  --selector="app=rook-ceph-operator"
 ---
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: stx-ceph-mon-audit

@@ -16,7 +16,7 @@ data:
   osd_audit.py: |-
 {{- include "script.osd_audit" . | indent 4 }}
 ---
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: stx-ceph-osd-audit
