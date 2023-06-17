@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = k8sapp_rook
+omit = k8sapp_rook/tests/*
+
+[report]
+ignore_errors = True
