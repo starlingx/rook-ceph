@@ -1,0 +1,103 @@
+#
+# Copyright (c) 2022-2024 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+image:
+  prefix: rook
+  repository: rook/ceph
+  tag: v1.7.11
+  pullPolicy: IfNotPresent
+app.starlingx.io/component: platform
+nodeSelector: {node-role.kubernetes.io/control-plane : ""}
+
+  # In some situations SELinux relabelling breaks (times out) on large filesystems, and doesn't work with cephfs ReadWriteMany volumes (last relabel wins).
+  # Disable it here if you have similar issues.
+  # For more details see https://github.com/rook/rook/issues/2417
+enableSelinuxRelabeling: true
+  # Writing to the hostPath is required for the Ceph mon and osd pods. Given the restricted permissions in OpenShift with SELinux,
+  # the pod must be running privileged in order to write to the hostPath volume, this must be set to true then.
+hostpathRequiresPrivileged: false
+  # Disable automatic orchestration when new devices are discovered.
+disableDeviceHotplug: false
+  # Blacklist certain disks according to the regex provided.
+discoverDaemonUdev:
+enableDiscoveryDaemon: false
+ # Tolerations for the rook-ceph-operator to allow it to run on nodes with particular taints
+
+pspEnable: false
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+  - key: node-role.kubernetes.io/master
+    operator: Exists
+    effect: NoSchedule
+
+crds:
+  # Whether the helm chart should create and update the CRDs. If false, the CRDs must be
+  # managed independently with cluster/examples/kubernetes/ceph/crds.yaml.
+  # **WARNING** Only set during first deployment. If later disabled the cluster may be DESTROYED.
+  # If the CRDs are deleted in this case, see the disaster recovery guide to restore them.
+  # https://rook.github.io/docs/rook/master/ceph-disaster-recovery.html#restoring-crds-after-deletion
+  enabled: true
+
+currentNamespaceOnly: false
+
+resources:
+  limits:
+    cpu: 600m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+# imagePullSecrets option allow to pull docker images from private docker registry. Option will be passed to all service accounts.
+imagePullSecrets:
+  - name: default-registry-key
+
+csi:
+  cephcsi:
+    image: quay.io/cephcsi/cephcsi:v3.4.0
+  registrar:
+    image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
+  provisioner:
+    image: registry.k8s.io/sig-storage/csi-provisioner:v3.5.0
+  snapshotter:
+    image: registry.k8s.io/sig-storage/csi-snapshotter:v6.2.2
+  attacher:
+    image: registry.k8s.io/sig-storage/csi-attacher:v4.3.0
+  resizer:
+    image: registry.k8s.io/sig-storage/csi-resizer:v1.8.0
+
+#  kubeletDirPath: /var/lib/kubelet
+  pluginTolerations:
+  - operator: "Exists"
+
+  enableRbdDriver: true
+  enableCephfsDriver: true
+  enableGrpcMetrics: true
+  enableSnapshotter: true
+
+  provisionerTolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+  - key: node-role.kubernetes.io/master
+    operator: Exists
+    effect: NoSchedule
+admissionController:
+  # Set tolerations and nodeAffinity for admission controller pod.
+  # The admission controller would be best to start on the same nodes as other ceph daemons.
+  tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+  - key: node-role.kubernetes.io/master
+    operator: Exists
+    effect: NoSchedule

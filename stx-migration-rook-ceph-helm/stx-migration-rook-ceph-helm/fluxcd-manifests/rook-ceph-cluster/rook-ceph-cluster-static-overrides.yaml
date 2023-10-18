@@ -1,0 +1,242 @@
+#
+# Copyright (c) 2022-2024 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+# Default values for ceph-cluster
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+configOverride: |
+  [global]
+  osd_journal_size = 1024
+  osd_pool_default_size = 1
+  osd_pool_default_min_size = 1
+  osd_pool_default_pg_num = 64
+  osd_pool_default_pgp_num = 64
+
+  osd_crush_chooseleaf_type = 1
+  setuser match path = /var/lib/ceph/$type/$cluster-$id
+  mon_osd_min_down_reporters = 1
+  osd_mon_report_interval_max = 120
+  mon_max_pg_per_osd = 2048
+  osd_max_pg_per_osd_hard_ratio = 1.2
+  ms_bind_ipv6 = false
+
+  [osd]
+  osd_mkfs_type = xfs
+  osd_mkfs_options_xfs = "-f"
+  osd_mount_options_xfs = "rw,noatime,inode64,logbufs=8,logbsize=256k"
+
+  [mon]
+  mon warn on legacy crush tunables = false
+  mon pg warn max per osd = 2048
+  mon pg warn max object skew = 0
+  mon clock drift allowed = .1
+  mon warn on pool no redundancy = false
+
+operatorNamespace: rook-ceph
+cephClusterSpec:
+  dataDirHostPath: /var/lib/ceph
+  cephVersion:
+    image: quay.io/ceph/ceph:v14.2.22
+    allowUnsupported: true
+  network:
+    provider: host
+  mon:
+    count: 1
+    allowMultiplePerNode: false
+  mgr:
+    count: 1
+    allowMultiplePerNode: false
+    modules:
+      # Several modules should not need to be included in this list. The "dashboard" and "monitoring" modules
+      # are already enabled by other settings in the cluster CR.
+      - name: pg_autoscaler
+        enabled: false
+  dashboard:
+    enabled: false
+  crashCollector:
+    disable: true
+    #deviceFilter:
+  healthCheck:
+    daemonHealth:
+      mon:
+        interval: 45s
+        timeout: 600s
+  disruptionManagement:
+    managePodBudgets: true
+  storage:
+    useAllNodes: false
+    useAllDevices: false
+
+  placement:
+    all:
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+        key: node-role.kubernetes.io/master
+      - effect: NoSchedule
+        operator: Exists
+        key: node-role.kubernetes.io/control-plane
+    mon:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: ceph-mon-placement
+              operator: In
+              values:
+              - enabled
+    mgr:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: ceph-mgr-placement
+              operator: In
+              values:
+              - enabled
+
+toolbox:
+  enabled: true
+  image: rook/ceph:v1.7.11
+
+pspEnable: false
+
+monitoring:
+  # requires Prometheus to be pre-installed
+  # enabling will also create RBAC rules to allow Operator to create ServiceMonitors
+  enabled: false
+
+
+cephFileSystems:
+  - name: kube-cephfs
+    # see https://github.com/rook/rook/blob/master/Documentation/ceph-filesystem-crd.md#filesystem-settings for available configuration
+    spec:
+      metadataPool:
+        replicated:
+          size: 1
+      dataPools:
+        - failureDomain: host # TODO
+          replicated:
+            size: 1
+      metadataServer:
+        activeCount: 1
+        activeStandby: true
+    storageClass:
+      enabled: true
+      isDefault: false
+      name: cephfs
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+      mountOptions: []
+      # see https://github.com/rook/rook/blob/master/Documentation/ceph-filesystem.md#provision-storage for available configuration
+      parameters:
+        # The secrets contain Ceph admin credentials.
+        csi.storage.k8s.io/provisioner-secret-name: rook-csi-cephfs-provisioner
+        csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+        csi.storage.k8s.io/controller-expand-secret-name: rook-csi-cephfs-provisioner
+        csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+        csi.storage.k8s.io/node-stage-secret-name: rook-csi-cephfs-node
+        csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
+        # Specify the filesystem type of the volume. If not specified, csi-provisioner
+        # will set default as `ext4`. Note that `xfs` is not recommended due to potential deadlock
+        # in hyperconverged settings where the volume is mounted on the same node as the osds.
+        csi.storage.k8s.io/fstype: ext4
+
+cephBlockPools:
+  - name: kube-rbd
+    # see https://github.com/rook/rook/blob/master/Documentation/ceph-pool-crd.md#spec for available configuration
+    spec:
+      failureDomain: host
+      replicated:
+        size: 1
+    storageClass:
+      enabled: true
+      name: general
+      isDefault: true
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+      mountOptions: []
+      # see https://github.com/rook/rook/blob/master/Documentation/ceph-block.md#provision-storage for available configuration
+      parameters:
+        # (optional) mapOptions is a comma-separated list of map options.
+        # For krbd options refer
+        # https://docs.ceph.com/docs/master/man/8/rbd/#kernel-rbd-krbd-options
+        # For nbd options refer
+        # https://docs.ceph.com/docs/master/man/8/rbd-nbd/#options
+        # mapOptions: lock_on_read,queue_depth=1024
+
+        # (optional) unmapOptions is a comma-separated list of unmap options.
+        # For krbd options refer
+        # https://docs.ceph.com/docs/master/man/8/rbd/#kernel-rbd-krbd-options
+        # For nbd options refer
+        # https://docs.ceph.com/docs/master/man/8/rbd-nbd/#options
+        # unmapOptions: force
+
+        # RBD image format. Defaults to "2".
+        imageFormat: "2"
+        # RBD image features. Available for imageFormat: "2". CSI RBD currently supports only `layering` feature.
+        imageFeatures: layering
+        # The secrets contain Ceph admin credentials.
+        csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+        csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+        csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+        csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
+        # Specify the filesystem type of the volume. If not specified, csi-provisioner
+        # will set default as `ext4`. Note that `xfs` is not recommended due to potential deadlock
+        # in hyperconverged settings where the volume is mounted on the same node as the osds.
+        csi.storage.k8s.io/fstype: ext4
+
+cephObjectStores:
+  - name: ceph-objectstore
+    # see https://github.com/rook/rook/blob/master/Documentation/ceph-object-store-crd.md#object-store-settings for available configuration
+    spec:
+      metadataPool:
+        failureDomain: host
+        replicated:
+          size: 0
+      dataPool:
+        failureDomain: host
+        erasureCoded:
+          dataChunks: 0
+          codingChunks: 0
+      preservePoolsOnDelete: false
+      gateway:
+        port: 80
+        # securePort: 443
+        # sslCertificateRef:
+        instances: 0
+      healthCheck:
+        bucket:
+          interval: 60s
+    storageClass:
+      enabled: false
+
+mds:
+  name: cephfs
+  replica: 2
+
+imagePullSecrets:
+  - name: default-registry-key
+
+hook:
+  image: docker.io/openstackhelm/ceph-config-helper:ubuntu_bionic-20220802
+  duplexPreparation:
+    enable: false
+    activeController: controller-0
+    floatIP: 192.188.204.1
+  cleanup:
+    enable: true
+    cluster_cleanup: rook-ceph
+    rbac:
+      clusterRole: rook-ceph-cleanup
+      clusterRoleBinding: rook-ceph-cleanup
+      role: rook-ceph-cleanup
+      roleBinding: rook-ceph-cleanup
+      serviceAccount: rook-ceph-cleanup
+    mon_hosts:
+    - controller-0

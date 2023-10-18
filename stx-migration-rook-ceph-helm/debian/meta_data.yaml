@@ -1,0 +1,10 @@
+---
+debname: stx-migration-rook-ceph-helm
+debver: 2.0-0
+src_path: stx-migration-rook-ceph-helm
+src_files:
+  - files
+revision:
+  dist: $STX_DIST
+  GITREVCOUNT:
+    BASE_SRCREV: 10c623509a68acad945d4e0c06a86b3e8486ad5b

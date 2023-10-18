@@ -1,0 +1,4 @@
+0001-Removed-cephobjectstore.yaml-from-templates-folder.patch
+0002-Adding-the-correct-version-to-rook_ceph-and-rook_cep.patch
+0003-Removing-unnecessary-0.patch
+0004-Added-chart-for-duplex-preparation.patch

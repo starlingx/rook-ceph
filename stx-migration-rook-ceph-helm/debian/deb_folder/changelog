@@ -1,0 +1,5 @@
+stx-migration-rook-ceph-helm (2.0-1) unstable; urgency=medium
+
+  * Initial release.
+
+ -- Caio Cesar Correa <caio.correa@windriver.com>  Fri, 20 Oct 2023 15:00:00 -0300

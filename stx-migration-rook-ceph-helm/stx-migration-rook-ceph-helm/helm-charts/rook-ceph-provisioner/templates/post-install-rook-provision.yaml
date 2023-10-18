@@ -1,0 +1,201 @@
+{{/*
+#
+# Copyright (c) 2020 Intel Corporation, Inc.
+# Copyright (c) 2018,2024 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+*/}}
+
+{{- if .Values.global.provision_storage }}
+{{ $root := . }}
+{{ $defaults := .Values.provisionStorage.classdefaults}}
+{{ $mount := "/tmp/mount" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-rook-ceph-provisioner
+  namespace: {{ $root.Release.Namespace }}
+data:
+  provision.sh: |-
+    #!/bin/bash
+
+    # Check if ceph is accessible
+    echo "===================================="
+    ceph -s
+    if [ $? -ne 0 ]; then
+      echo "Error: Ceph cluster is not accessible, check Pod logs for details."
+      exit 1
+    fi
+
+    ceph osd pool rename kube-cephfs-data0 kube-cephfs-data
+
+    if [[ -z "${USER_ID}" && -z "${CEPH_USER_SECRET}" ]]; then
+      echo "No need to create secrets for pool ${POOL_NAME}"
+      exit 0
+    fi
+
+    set -ex
+    # Make sure the pool exists.
+    ceph osd pool stats ${POOL_NAME}
+    if [ $? -ne 0 ]; then
+      echo "Error: no pool for storge class"
+      exit 1
+    fi
+    ceph osd pool set ${POOL_NAME} size ${POOL_REPLICATION} --yes-i-really-mean-it
+    ceph osd pool set ${POOL_NAME} pg_num ${POOL_CHUNK_SIZE}
+
+    # Make sure crush rule exists.
+    ceph osd crush rule create-replicated ${POOL_CRUSH_RULE_NAME} default host
+    ceph osd pool set ${POOL_NAME} crush_rule ${POOL_CRUSH_RULE_NAME}
+    if [ $? -ne 0 ]; then
+      echo "Error: set pool crush rule failed"
+    fi
+    set +ex
+
+    kubectl get configmap ceph-etc -n ${NAMESPACE} | grep ceph-etc
+    if [ $? ]; then
+        echo "Delete out-of-date configmap ceph-etc"
+        kubectl delete configmap -n rook-ceph ceph-etc
+    fi
+    kubectl create configmap ceph-etc --from-file=/etc/ceph/ceph.conf -n ${NAMESPACE}
+    if [ $? -ne 0 ]; then
+        echo "Error creating configmap ceph-etc, exit"
+        exit 1
+    fi
+
+    if [ -n "${CEPH_ADMIN_SECRET}" ]; then
+      kubectl get secret ${CEPH_ADMIN_SECRET} -n ${NAMESPACE} | grep ${CEPH_ADMIN_SECRET}
+      if [ $? ]; then
+        echo "Delete out-of-date ${CEPH_ADMIN_SECRET} secret"
+        kubectl delete secret -n rook-ceph ${CEPH_ADMIN_SECRET}
+      fi
+      echo "Create ${CEPH_ADMIN_SECRET} secret"
+
+      admin_keyring=$(echo $ADMIN_KEYRING | cut -f4 -d' ')
+      kubectl create secret generic ${CEPH_ADMIN_SECRET} --type="kubernetes.io/rbd" --from-literal=key=$admin_keyring --namespace=${NAMESPACE}
+      if [ $? -ne 0 ]; then
+        echo "Error creating secret ${CEPH_ADMIN_SECRET}, exit"
+        exit 1
+      fi
+    fi
+
+    KEYRING=$(ceph auth get-or-create client.${USER_ID} mon "allow r" osd "allow rwx pool=${POOL_NAME}" | sed -n 's/^[[:blank:]]*key[[:blank:]]\+=[[:blank:]]\(.*\)/\1/p')
+    if [ -n "${CEPH_USER_SECRET}" ]; then
+      kubectl get secret -n ${NAMESPACE} ${CEPH_USER_SECRET} 2>/dev/null
+      if [ $? ]; then
+        echo "Delete out-of-date ${CEPH_USER_SECRET} secret"
+        kubectl delete secret -n rook-ceph ${CEPH_USER_SECRET}
+      fi
+
+      echo "Create ${CEPH_USER_SECRET} secret"
+      kubectl create secret generic -n ${NAMESPACE} ${CEPH_USER_SECRET} --type="kubernetes.io/rbd" --from-literal=key=$KEYRING
+      if [ $? -ne 0 ]; then
+        echo"Error creating secret ${CEPH_USER_SECRET} in ${NAMESPACE}, exit"
+        exit 1
+      fi
+    fi
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "rook-ceph-provision"
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    heritage: {{$root.Release.Service | quote }}
+    release: {{$root.Release.Name | quote }}
+    chart: "{{$root.Chart.Name}}-{{$root.Chart.Version}}"
+  annotations:
+    "helm.sh/hook": "post-install, pre-upgrade, pre-rollback"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+spec:
+  backoffLimit: 10  # Limit the number of job restart in case of failure: ~10 minutes.
+  template:
+    metadata:
+      name: "rook-ceph-provision"
+      namespace: {{ $root.Release.Namespace }}
+      labels:
+        heritage: {{$root.Release.Service | quote }}
+        release: {{$root.Release.Name | quote }}
+        chart: "{{$root.Chart.Name}}-{{$root.Chart.Version}}"
+    spec:
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+        key: node-role.kubernetes.io/master
+      - effect: NoSchedule
+        operator: Exists
+        key: node-role.kubernetes.io/control-plane
+      serviceAccountName: {{ $root.Values.rbac.serviceAccount }}
+      restartPolicy: OnFailure
+      volumes:
+        - name: config-volume-rook-ceph-provisioner
+          configMap:
+            name: config-rook-ceph-provisioner
+        - name: config-key-provision
+          configMap:
+            name: {{ .Values.global.configmap_key_init }}
+        - name: ceph-config
+          emptyDir: {}
+      initContainers:
+      - name: init
+        image: {{ $root.Values.images.tags.ceph_config_helper | quote }}
+        command: [ "/bin/bash", "{{ $mount }}/provision.sh" ]
+        env:
+          - name: MON_HOST
+            value: "{{ $defaults.monitors }}"
+          - name: ADMIN_KEYRING
+            valueFrom:
+              secretKeyRef:
+                name: rook-ceph-admin-keyring
+                key: keyring
+          - name: ROOK_MONS
+            valueFrom:
+              configMapKeyRef:
+                name: rook-ceph-mon-endpoints
+                key: data
+        volumeMounts:
+        - mountPath: /etc/ceph
+          name: ceph-config
+        - name: config-key-provision
+          mountPath: /tmp/mount
+      containers:
+      {{ $classConfig := $root.Values.provisionStorage.classes }}
+      - name: storage-init-{{- $classConfig.name }}
+        image: {{ $root.Values.images.tags.ceph_config_helper | quote }}
+        command: [ "/bin/bash", "{{ $mount }}/provision.sh" ]
+        env:
+          - name: NAMESPACE
+            value: {{ $root.Release.Namespace }}
+          - name: CEPH_ADMIN_SECRET
+            value: {{ $defaults.adminSecretName }}
+          - name: CEPH_USER_SECRET
+            value: {{ $classConfig.secret.userSecretName }}
+          - name: USER_ID
+            value: {{ $classConfig.secret.userId }}
+          - name: POOL_NAME
+            value: {{ $classConfig.pool.pool_name }}
+          - name: POOL_REPLICATION
+            value: {{ $classConfig.pool.replication | quote }}
+          - name: POOL_CRUSH_RULE_NAME
+            value: {{ $classConfig.pool.crush_rule_name | quote }}
+          - name: POOL_CHUNK_SIZE
+            value: {{ $classConfig.pool.chunk_size | quote }}
+          - name: ADMIN_KEYRING
+            valueFrom:
+              secretKeyRef:
+                name: rook-ceph-admin-keyring
+                key: keyring
+        volumeMounts:
+          - name: config-volume-rook-ceph-provisioner
+            mountPath: {{ $mount }}
+          - name: ceph-config
+            mountPath: /etc/ceph
+            readOnly: true
+      {{- if .Values.global.nodeSelector }}
+      nodeSelector:
+      {{ .Values.global.nodeSelector | toYaml | trim | indent 8 }}
+      {{- end }}
+{{- end }}

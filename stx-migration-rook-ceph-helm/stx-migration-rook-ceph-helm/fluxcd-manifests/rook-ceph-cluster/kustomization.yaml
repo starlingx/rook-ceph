@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2022-2024 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+namespace: rook-ceph
+resources:
+  - helmrelease.yaml
+secretGenerator:
+  - name: rook-ceph-cluster-static-overrides
+    files:
+      - rook-ceph-cluster-static-overrides.yaml
+  - name: rook-ceph-cluster-system-overrides
+    files:
+      - rook-ceph-cluster-system-overrides.yaml
+generatorOptions:
+  disableNameSuffixHash: true

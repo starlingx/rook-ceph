@@ -1,0 +1,134 @@
+From bc78e84d0814c8fbac48565946a77af980324bf2 Mon Sep 17 00:00:00 2001
+From: Caio Correa <caio.correa@windriver.com>
+Date: Tue, 5 Mar 2024 19:10:55 -0300
+Subject: [PATCH] Added chart for duplex preparation
+
+This patch adds a pre-install rook that edits the entrypoint to 
+rook-ceph-mon. On a duplex this entrypoint should be the floating IP 
+to acomplish the roaming mon strategy.
+
+Signed-off-by: Caio Correa <caio.correa@windriver.com>
+---
+ .../pre-install-duplex-preparation.yaml       | 82 +++++++++++++++++++
+ cluster/charts/rook-ceph-cluster/values.yaml  | 18 ++++
+ 2 files changed, 100 insertions(+)
+ create mode 100644 cluster/charts/rook-ceph-cluster/templates/pre-install-duplex-preparation.yaml
+
+diff --git a/cluster/charts/rook-ceph-cluster/templates/pre-install-duplex-preparation.yaml b/cluster/charts/rook-ceph-cluster/templates/pre-install-duplex-preparation.yaml
+new file mode 100644
+index 000000000..61e64c87b
+--- /dev/null
++++ b/cluster/charts/rook-ceph-cluster/templates/pre-install-duplex-preparation.yaml
+@@ -0,0 +1,82 @@
++{{/*
++#
++# Copyright (c) 2020 Intel Corporation, Inc.
++#
++# SPDX-License-Identifier: Apache-2.0
++#
++*/}}
++
++{{- if .Values.hook.duplexPreparation.enable }}
++{{ $root := . }}
++---
++apiVersion: v1
++kind: ConfigMap
++metadata:
++  name: config-rook-ceph-duplex-preparation
++  namespace: {{ $root.Release.Namespace }}
++  annotations:
++    "helm.sh/hook": "pre-install"
++    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
++data:
++  rook_duplex_preparation.sh: |-
++    #!/bin/bash
++
++    cat >  endpoint.yaml << EOF
++    apiVersion: v1
++    kind: ConfigMap
++    metadata:
++      name: rook-ceph-mon-endpoints
++      namespace: $NAMESPACE
++    data:
++      data: a=$FLOAT_IP:6789
++      mapping: '{"node":{"a":{"Name":"$ACTIVE_CONTROLLER","Hostname":"$ACTIVE_CONTROLLER","Address":"$FLOAT_IP"}}}'
++      maxMonId: "0"
++    EOF
++
++    kubectl apply -f endpoint.yaml
++
++    rm -f endpoint.yaml
++---
++apiVersion: batch/v1
++kind: Job
++metadata:
++  name: rook-ceph-duplex-preparation
++  namespace: {{ $root.Release.Namespace }}
++  labels:
++    heritage: {{$root.Release.Service | quote }}
++    release: {{$root.Release.Name | quote }}
++    chart: "{{$root.Chart.Name}}-{{$root.Chart.Version}}"
++  annotations:
++    "helm.sh/hook": "pre-install"
++    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
++spec:
++  template:
++    metadata:
++      name: rook-ceph-duplex-preparation
++      namespace: {{ $root.Release.Namespace }}
++      labels:
++        heritage: {{$root.Release.Service | quote }}
++        release: {{$root.Release.Name | quote }}
++        chart: "{{$root.Chart.Name}}-{{$root.Chart.Version}}"
++    spec:
++      serviceAccountName: rook-ceph-system
++      restartPolicy: OnFailure
++      volumes:
++        - name: config-rook-ceph-duplex-preparation
++          configMap:
++            name: config-rook-ceph-duplex-preparation
++      containers:
++        - name: duplex-preparation
++          image: {{ .Values.hook.image }}
++          command: [ "/bin/bash", "/tmp/mount/rook_duplex_preparation.sh" ]
++          env:
++            - name: NAMESPACE
++              value: {{ $root.Release.Namespace }}
++            - name: ACTIVE_CONTROLLER
++              value: {{ $root.Values.hook.duplexPreparation.activeController }}
++            - name: FLOAT_IP
++              value: {{ $root.Values.hook.duplexPreparation.floatIP }}
++          volumeMounts:
++            - name: config-rook-ceph-duplex-preparation
++              mountPath: /tmp/mount
++{{- end }}
+diff --git a/cluster/charts/rook-ceph-cluster/values.yaml b/cluster/charts/rook-ceph-cluster/values.yaml
+index ca29c52f7..9194cbac8 100644
+--- a/cluster/charts/rook-ceph-cluster/values.yaml
++++ b/cluster/charts/rook-ceph-cluster/values.yaml
+@@ -424,3 +424,21 @@ cephObjectStores:
+       parameters:
+         # note: objectStoreNamespace and objectStoreName are configured by the chart
+         region: us-east-1
++
++hook:
++  image: docker.io/openstackhelm/ceph-config-helper:ubuntu_bionic-20220802
++  duplexPreparation:
++    enable: false
++    activeController: controller-0
++    floatIP: 192.188.204.1
++  cleanup:
++    enable: true
++    cluster_cleanup: rook-ceph
++    rbac:
++      clusterRole: rook-ceph-cleanup
++      clusterRoleBinding: rook-ceph-cleanup
++      role: rook-ceph-cleanup
++      roleBinding: rook-ceph-cleanup
++      serviceAccount: rook-ceph-cleanup
++    mon_hosts:
++    - controller-0
+\ No newline at end of file
+-- 
+2.34.1
+

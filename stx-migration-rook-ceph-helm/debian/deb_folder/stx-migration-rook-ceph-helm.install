@@ -1,0 +1,2 @@
+usr/local/share/applications/helm/*
+etc/init.d/rook-mon-exit

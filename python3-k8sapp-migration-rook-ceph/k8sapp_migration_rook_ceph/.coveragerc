@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = k8sapp_migration_rook_ceph
+omit = k8sapp_migration_rook_ceph/tests/*
+
+[report]
+ignore_errors = True

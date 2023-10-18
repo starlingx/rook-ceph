@@ -1,0 +1,66 @@
+#!/usr/bin/make -f
+export DH_VERBOSE = 1
+
+export ROOT = debian/tmp
+export APP_FOLDER = $(ROOT)/usr/local/share/applications/helm
+export INITRD_DIR = $(ROOT)/etc/init.d
+
+export DEB_VERSION = $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
+export RELEASE = $(shell echo $(DEB_VERSION) | cut -f 1 -d '-')
+export REVISION = $(shell echo $(DEB_VERSION) | cut -f 4 -d '.')
+
+export APP_NAME = rook-ceph-migration
+export APP_VERSION = $(RELEASE)-$(REVISION)
+export APP_TARBALL_FLUXCD = $(APP_NAME)-$(APP_VERSION).tgz 
+
+export HELM_REPO = stx-platform
+export HELM_FOLDER = /usr/lib/helm
+export STAGING = staging-fluxcd
+
+%:
+	dh $@
+
+override_dh_auto_build:
+
+#	Create the TGZ file.
+	cd helm-charts && make rook-ceph-provisioner
+
+#	Setup staging
+	mkdir -p $(STAGING)
+	cp files/metadata.yaml $(STAGING)
+	cp -Rv fluxcd-manifests $(STAGING)
+
+
+	mkdir -p $(STAGING)/charts
+	cp helm-charts/*.tgz $(STAGING)/charts
+	cp $(HELM_FOLDER)/rook-ceph*.tgz $(STAGING)/charts
+
+#	Populate metadata
+	sed -i 's/APP_REPLACE_NAME/$(APP_NAME)/g' $(STAGING)/metadata.yaml
+	sed -i 's/APP_REPLACE_VERSION/$(APP_VERSION)/g' $(STAGING)/metadata.yaml
+	sed -i 's/HELM_REPLACE_REPO/$(HELM_REPO)/g' $(STAGING)/metadata.yaml
+
+#	Copy the plugins: installed in the buildroot
+	mkdir -p $(STAGING)/plugins
+	cp /plugins/*.whl $(STAGING)/plugins
+
+#	Package it up
+	cd $(STAGING)
+	find . -type f ! -name '*.md5' -print0 | xargs -0 md5sum > checksum.md5
+	tar -zcf $(APP_TARBALL_FLUXCD) -C $(STAGING)/ .
+
+#	Cleanup staging
+	rm -fr $(STAGING)
+
+override_dh_auto_install:
+#	Install the app tar file
+	install -d -m 755 $(APP_FOLDER)
+	install -d -m 755 $(INITRD_DIR)
+	install -p -D -m 755 $(APP_TARBALL_FLUXCD) $(APP_FOLDER)
+	install -m 750 files/rook-mon-exit.sh $(INITRD_DIR)/rook-mon-exit
+
+# Prevents dh_fixperms from changing the permissions defined in this file
+override_dh_fixperms:
+	dh_fixperms --exclude etc/init.d/rook-mon-exit
+
+override_dh_usrlocal:

@@ -1,0 +1,26 @@
+#!/usr/bin/make -f
+export DH_VERBOSE = 1
+
+export ROOT = debian/tmp
+export APP_FOLDER = $(ROOT)/usr/lib/helm
+
+%:
+	dh $@
+
+override_dh_auto_build:
+
+#	Copy migration-rook-ceph-helm charts
+	mkdir -p migration-rook-ceph-helm
+	cp -r cluster/charts/* migration-rook-ceph-helm
+	cp Makefile migration-rook-ceph-helm
+
+	cd migration-rook-ceph-helm && make rook-ceph
+	cd migration-rook-ceph-helm && make rook-ceph-cluster
+
+override_dh_auto_install:
+#	Install the app tar file.
+	install -d -m 755 $(APP_FOLDER)
+	install -p -D -m 755 migration-rook-ceph-helm/rook-ceph-cluster*.tgz $(APP_FOLDER)
+	install -p -D -m 755 migration-rook-ceph-helm/rook-ceph-[!c]*.tgz $(APP_FOLDER)
+
+override_dh_auto_test:

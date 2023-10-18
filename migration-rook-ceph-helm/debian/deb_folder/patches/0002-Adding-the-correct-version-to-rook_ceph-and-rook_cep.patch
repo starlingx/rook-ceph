@@ -1,0 +1,47 @@
+From 335b28d67df13d8d064fc8b654ccb7db2adf52ec Mon Sep 17 00:00:00 2001
+From: jdeolive <Joao.DeOliveiraSilva@windriver.com>
+Date: Wed, 7 Feb 2024 15:28:22 -0300
+Subject: [PATCH] Adding the correct version to rook_ceph and rook_ceph_cluster
+
+Adds some versioning to the charts. Upstream charts contains the spurious 
+versioning numbers 0.0.1.
+
+Signed-off-by: jdeolive <Joao.DeOliveiraSilva@windriver.com>
+---
+ cluster/charts/rook-ceph-cluster/Chart.yaml | 4 ++--
+ cluster/charts/rook-ceph/Chart.yaml         | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/cluster/charts/rook-ceph-cluster/Chart.yaml b/cluster/charts/rook-ceph-cluster/Chart.yaml
+index b282613cd..8e622e0f2 100644
+--- a/cluster/charts/rook-ceph-cluster/Chart.yaml
++++ b/cluster/charts/rook-ceph-cluster/Chart.yaml
+@@ -1,8 +1,8 @@
+ apiVersion: v2
+ description: Manages a single Ceph cluster namespace for Rook
+ name: rook-ceph-cluster
+-version: 0.0.1
+-appVersion: 0.0.1
++version: 1.7.11
++appVersion: 1.7.11
+ icon: https://rook.io/images/rook-logo.svg
+ sources:
+   - https://github.com/rook/rook
+diff --git a/cluster/charts/rook-ceph/Chart.yaml b/cluster/charts/rook-ceph/Chart.yaml
+index 6b19f642b..43059e601 100644
+--- a/cluster/charts/rook-ceph/Chart.yaml
++++ b/cluster/charts/rook-ceph/Chart.yaml
+@@ -1,8 +1,8 @@
+ apiVersion: v2
+ description: File, Block, and Object Storage Services for your Cloud-Native Environment
+ name: rook-ceph
+-version: 0.0.1
+-appVersion: 0.0.1
++version: 1.7.11
++appVersion: 1.7.11
+ icon: https://rook.io/images/rook-logo.svg
+ sources:
+   - https://github.com/rook/rook
+-- 
+2.25.1
+

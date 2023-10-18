@@ -1,0 +1,11 @@
+#
+# Copyright (c) 2018,2024 Wind River Systems, Inc.
+# Copyright (c) 2020 Intel, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+apiVersion: v1
+appVersion: "1.1"
+description: A Helm chart for Kubernetes
+name: rook-ceph-provisioner
+version: 1.1.0
