@@ -35,7 +35,7 @@ rbac:
 images:
   tags:
     ceph_config_helper: docker.io/openstackhelm/ceph-config-helper:ubuntu_bionic-20220802
-    stx_ceph_manager: docker.io/starlingx/stx-ceph-manager:master-centos-stable-20230118T031801Z.0
+    stx_ceph_manager: docker.io/starlingx/stx-ceph-manager:stx.10.0-v1.7.11
     k8s_entrypoint: quay.io/airshipit/kubernetes-entrypoint:v1.0.0
 
 
