@@ -9,6 +9,9 @@ maintain_attributes: true
 upgrades:
   auto_update: false
 
+supported_k8s_version:
+  minimum: 1.24.4
+
 behavior:
   platform_managed_app: no
   evaluate_reapply:
