@@ -1,5 +1,0 @@
-dependencies:
-    #  - name: rook-ceph
-    #repository: http://localhost:8879
-    #version: 0.1.0
-    #alias: rook-operator

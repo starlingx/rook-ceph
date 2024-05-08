@@ -1,0 +1,5 @@
+migration-rook-ceph-provisioner-helm (1.1-0) unstable; urgency=medium
+
+  * Initial release.
+
+ --  Luiz Felipe Kina <LuizFelipe.EiskeKina@windriver.com>  Tue, 14 May 2024 10:45:00 +0000

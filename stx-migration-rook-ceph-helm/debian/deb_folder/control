@@ -5,6 +5,7 @@ Maintainer: StarlingX Developers <starlingx-discuss@lists.starlingx.io>
 Build-Depends: debhelper-compat (= 13),
  helm,
  migration-rook-ceph-helm,
+ migration-rook-ceph-provisioner-helm,
  python3-k8sapp-migration-rook-ceph-wheels,
 Standards-Version: 4.1.2
 Homepage: https://www.starlingx.io

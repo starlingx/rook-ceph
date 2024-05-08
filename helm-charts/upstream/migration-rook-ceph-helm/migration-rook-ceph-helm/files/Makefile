@@ -30,12 +30,11 @@ lint-%: init-%
 	if [ -d $* ]; then helm lint $*; fi
 
 build-%: lint-%
-	if [ -d $* ]; then helm package $*; fi
+	if [ -d $* ]; then helm package --version $(CHART_VERSION) $*; fi
 
 clean:
 	@echo "Clean all build artifacts"
 	rm -f */templates/_partials.tpl */templates/_globals.tpl
-	rm -f *tgz */charts/*tgz
 	rm -rf */charts */tmpcharts
 
 %:

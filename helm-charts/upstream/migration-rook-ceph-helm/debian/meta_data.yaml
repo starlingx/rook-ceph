@@ -9,5 +9,7 @@ src_files:
   - migration-rook-ceph-helm/files/Makefile
 revision:
   dist: $STX_DIST
+  stx_patch: 3
   GITREVCOUNT:
-    BASE_SRCREV: 10c623509a68acad945d4e0c06a86b3e8486ad5b
+    BASE_SRCREV: 340492c793197d5a3ceb77cbe1087c3aaea2450a
+    SRC_DIR: ${MY_REPO}/stx/rook-ceph/helm-charts/upstream/migration-rook-ceph-helm

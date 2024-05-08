@@ -11,5 +11,5 @@ Package: migration-rook-ceph-helm
 Section: libs
 Architecture: any
 Depends: ${misc:Depends}
-Description: StarlingX Rook-Ceph Helm Charts
- This package contains helm charts for the Rook-Ceph application.
+Description: StarlingX Migration Rook-Ceph Helm Charts
+ This package contains helm charts for the Migration Rook-Ceph application.
