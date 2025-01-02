@@ -33,24 +33,24 @@ class RookCephAppLifecycleOperator(base.AppLifecycleOperator):
 
         """
         # Fluxcd request
-        if hook_info.lifecycle_type == constants.APP_LIFECYCLE_TYPE_FLUXCD_REQUEST:
+        if hook_info.lifecycle_type == LifecycleConstants.APP_LIFECYCLE_TYPE_FLUXCD_REQUEST:
             if (hook_info.operation == constants.APP_REMOVE_OP and
-                      hook_info.relative_timing == constants.APP_LIFECYCLE_TIMING_PRE):
+                      hook_info.relative_timing == LifecycleConstants.APP_LIFECYCLE_TIMING_PRE):
                 return self.remove_finalizers_crd()
 
         # Resources
-        if hook_info.lifecycle_type == constants.APP_LIFECYCLE_TYPE_RESOURCE:
+        if hook_info.lifecycle_type == LifecycleConstants.APP_LIFECYCLE_TYPE_RESOURCE:
             if hook_info.operation == constants.APP_APPLY_OP:
-                if hook_info.relative_timing == constants.APP_LIFECYCLE_TIMING_PRE:
+                if hook_info.relative_timing == LifecycleConstants.APP_LIFECYCLE_TIMING_PRE:
                     return lifecycle_utils.create_local_registry_secrets(app_op, app, hook_info)
             elif (hook_info.operation == constants.APP_REMOVE_OP and
-                      hook_info.relative_timing == constants.APP_LIFECYCLE_TIMING_POST):
+                      hook_info.relative_timing == LifecycleConstants.APP_LIFECYCLE_TIMING_POST):
                 return lifecycle_utils.delete_local_registry_secrets(app_op, app, hook_info)
 
         # Operation
-        elif hook_info.lifecycle_type == constants.APP_LIFECYCLE_TYPE_OPERATION:
+        elif hook_info.lifecycle_type == LifecycleConstants.APP_LIFECYCLE_TYPE_OPERATION:
             if (hook_info.operation == constants.APP_APPLY_OP and
-                    hook_info.relative_timing == constants.APP_LIFECYCLE_TIMING_POST):
+                    hook_info.relative_timing == LifecycleConstants.APP_LIFECYCLE_TIMING_POST):
                 return self.post_apply(context, conductor_obj, app, hook_info)
 
         # Use the default behaviour for other hooks
